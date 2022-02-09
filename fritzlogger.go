@@ -1,88 +1,41 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"path/filepath"
+
+	cli "github.com/jawher/mow.cli"
 )
 
-func findinLogs(logline string) int {
-	var found bool = true
-	var newlogs []string
-
-	totallog, err := os.OpenFile("fritz.logs", os.O_RDONLY|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer totallog.Close()
-
-	var linecount int = 0
-	var newlines int = 0
-
-	linesscanner := bufio.NewScanner(totallog)
-	for linesscanner.Scan() {
-		if linesscanner.Text() == logline {
-			found = true
-			linecount++
-		}
-	}
-
-	if !found {
-		newlines++
-		newlogs = append(newlogs, logline)
-	}
-
-	if err := linesscanner.Err(); err != nil {
-		fmt.Println(err)
-	}
-
-	if linecount == 0 {
-		newlogs = append(newlogs, logline)
-	}
-
-	ttwr, _ := os.OpenFile("fritz.logs", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	defer ttwr.Close()
-
-	for _, line := range newlogs {
-		ttwr.WriteString(line + "\n")
-	}
-
-	// fmt.Printf("%v log lines found.\n", newlines)
-
-	return newlines
-}
-
 func main() {
-	localpath, _ := os.Getwd()
-	if len(os.Args) > 1 {
-		if os.Args[1] != "" {
-			localpath = os.Args[1]
+
+	app := cli.App("fritzlogger", "Parse TR064 System logs and merge them")
+	app.Spec = "[-d] DIR [LOGFILE]"
+	app.Version("v version", fmt.Sprintf("fritzlogger Version %v\nCopyright (c) 2022 George Pantazis\nGNU GPL 2.0", "1.1"))
+	app.LongDesc = "fritzlogger will merge & sort fritz system log dumps including TD064 messages"
+
+	var (
+		// version = app.BoolOpt("v version", false, "Application Version")
+		remove           = app.BoolOpt("d delete", false, "Delete Parsed Logs")
+		dir              = app.StringArg("DIR", "", "Directory Containing Logs")
+		mergelogfilename = app.StringArg("LOGFILE", "fritz.logs", "The Merged Log File")
+	)
+
+	app.Action = func() {
+		var localpath string
+
+		if *dir == "" {
+			localpath, _ = os.Getwd()
+		} else {
+			localpath = *dir
+		}
+
+		if _, err := os.Stat(localpath); !os.IsNotExist(err) {
+			parselogs(*remove, localpath, *mergelogfilename)
+		} else {
+			fmt.Printf("%s directory does not exist\n", localpath)
 		}
 	}
 
-	files, err := ioutil.ReadDir(localpath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, file := range files {
-		if !file.IsDir() {
-			if filepath.Ext(file.Name()) == ".log" {
-				logfile, err := os.Open(localpath + "/" + file.Name())
-				if err != nil {
-					fmt.Println(err)
-				}
-				defer logfile.Close()
-
-				linesscanner := bufio.NewScanner(logfile)
-				for linesscanner.Scan() {
-					findinLogs(linesscanner.Text())
-				}
-				os.Remove(localpath + "/" + file.Name())
-			}
-		}
-	}
+	app.Run(os.Args)
 }
