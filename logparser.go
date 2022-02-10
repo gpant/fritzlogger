@@ -61,7 +61,6 @@ func parselogs(remove bool, localpath, mergelogfilename string) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			defer logfile.Close()
 
 			linesscanner := bufio.NewScanner(logfile)
 			for linesscanner.Scan() {
@@ -75,6 +74,8 @@ func parselogs(remove bool, localpath, mergelogfilename string) {
 			if addedloglines > 0 {
 				fmt.Printf("%v log lines added.", addedloglines)
 			}
+
+			logfile.Close()
 		}
 	}
 }
