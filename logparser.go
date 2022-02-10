@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -95,6 +96,7 @@ func findinLogs(logline, mergelogfilename string) int {
 
 	linesscanner := bufio.NewScanner(totallog)
 	for linesscanner.Scan() {
+
 		if linesscanner.Text() == logline {
 			found = true
 			linecount++
@@ -116,10 +118,26 @@ func findinLogs(logline, mergelogfilename string) int {
 
 	ttwr, _ := os.OpenFile(mergelogfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer ttwr.Close()
-
 	for _, line := range newlogs {
 		ttwr.WriteString(line + "\n")
 	}
 
 	return newlines
+}
+
+func sortLogFile(logfile string) {
+	var loglinestosort []string
+
+	totallog, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer totallog.Close()
+
+	linesscanner := bufio.NewScanner(totallog)
+	for linesscanner.Scan() {
+		loglinestosort = append(loglinestosort, linesscanner.Text())
+	}
+
+	sort.Strings(loglinestosort)
 }
