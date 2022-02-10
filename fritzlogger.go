@@ -10,15 +10,17 @@ import (
 func main() {
 
 	app := cli.App("fritzlogger", "Parse TR064 System logs and merge them")
-	app.Spec = "[-d] DIR [LOGFILE]"
+	app.Spec = "[-d] [-e] DIR [LOGFILE]"
 	app.Version("v version", fmt.Sprintf("fritzlogger Version %v\nCopyright (c) 2022 George Pantazis\nGNU GPL 2.0", "1.1"))
-	app.LongDesc = "fritzlogger will merge & sort fritz system log dumps including TD064 messages"
+	app.LongDesc = "fritzlogger will merge & sort fritz system log dumps including TR064 messages"
 
 	var (
 		// version = app.BoolOpt("v version", false, "Application Version")
 		remove           = app.BoolOpt("d delete", false, "Delete Parsed Logs")
 		dir              = app.StringArg("DIR", "", "Directory Containing Logs")
 		mergelogfilename = app.StringArg("LOGFILE", "fritz.logs", "The Merged Log File")
+		emulateonly      = app.BoolOpt("e emulate", false, "Only output to console, dont copy/move/delete logs")
+		_                = emulateonly
 	)
 
 	app.Action = func() {
